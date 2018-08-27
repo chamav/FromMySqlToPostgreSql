@@ -301,6 +301,8 @@ class MapDataTypes
                 $strRetVal = $boolIncreaseOriginalSize
                            ? self::$arrMySqlPgSqlTypesMap[$strDataType]['increased_size']
                            : self::$arrMySqlPgSqlTypesMap[$strDataType]['type'];
+                if($strMySqlDataType  == 'binary(16)')
+                        $strRetVal = 'varchar(36)';
 
             } else {
                 // Should be converted with a length definition.

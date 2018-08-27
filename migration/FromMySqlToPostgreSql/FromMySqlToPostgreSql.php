@@ -705,7 +705,10 @@ class FromMySqlToPostgreSql
                         $arrSanitizedCsvData[] = '\N';
                     } else if (isset($arrBinaryFields[$name])) {
                         // Binary types need \x for hex escaping and will receive hex from the MySQL query.
-                        $arraySanitizedCsvData[] = '\x'.$value;
+                        //$arraySanitizedCsvData[] = '\x'.$value;
+                        $hex = unpack('H*', $value)[1];
+                        $hex = substr($hex, 8, 4) . substr($hex, 12, 4) . substr($hex, 4, 4) . substr($hex, 0, 4) . substr($hex, 16);
+                        $arrSanitizedCsvData[] = $this->extractComponents($hex);
                     } else if (mb_check_encoding($value, $this->strEncoding)) {
                         $arrSanitizedCsvData[] = $this->escapeValue($value);
                     } else {
@@ -1662,5 +1665,39 @@ class FromMySqlToPostgreSql
             . ':' . ($intSeconds < 10 ? '0' . $intSeconds : $intSeconds)
             . ' (hours:minutes:seconds)' . PHP_EOL . PHP_EOL
         );
+    }
+
+    /**
+     * Returns an array of UUID components (the UUID exploded on its dashes)
+     *
+     * @param string $encodedUuid
+     * @return array
+     * @throws \Ramsey\Uuid\Exception\InvalidUuidStringException
+     */
+    protected function extractComponents($encodedUuid)
+    {
+        $nameParsed = str_replace(array(
+            'urn:',
+            'uuid:',
+            '{',
+            '}',
+            '-'
+        ), '', $encodedUuid);
+
+        // We have stripped out the dashes and are breaking up the string using
+        // substr(). In this way, we can accept a full hex value that doesn't
+        // contain dashes.
+        $components = array(
+            substr($nameParsed, 0, 8),
+            substr($nameParsed, 8, 4),
+            substr($nameParsed, 12, 4),
+            substr($nameParsed, 16, 4),
+            substr($nameParsed, 20)
+        );
+
+        $nameParsed = implode('-', $components);
+
+
+        return $nameParsed;
     }
 }
